@@ -2,20 +2,12 @@ import useSWR from 'swr';
 import { useMemo } from 'react';
 import { movieApi } from '../api/movieApi';
 
-const DEFAULT_GENRES = {
-  '1': 'Action',
-  '2': 'Drama',
-  '3': 'Action',
-  '4': 'Drama',
-  '5': 'Drama',
-  '6': 'Action',
-  '7': 'Drama',
-  '8': 'Action',
-  '9': 'Action',
-  '10': 'Action',
-};
-
 export default function useMovies(criteria = {}) {
+  const serializedKey = useMemo(
+    () => JSON.stringify(criteria || {}),
+    [criteria]
+  );
+
   const {
     data,
     error,
@@ -23,26 +15,26 @@ export default function useMovies(criteria = {}) {
     isValidating,
     mutate,
   } = useSWR(
-    ['movies', criteria],
-    ([, filters]) => movieApi.query(filters),
+    ['movies', serializedKey],
+    () => movieApi.query(criteria),
     {
       keepPreviousData: true,
-      revalidateOnFocus: true,
+      revalidateOnFocus: false,
     }
   );
 
   const movies = useMemo(() => {
     const rawList =
       data?.dataList ??
-      data?.data?.dataList ??
-      [];
+      (Array.isArray(data?.data) ? data.data : []);
 
     return rawList.map((movie) => {
       const id = String(movie.id);
       return {
         ...movie,
         id,
-        genre: movie.genre || DEFAULT_GENRES[id] || 'General',
+        actors: movie.actors || '',
+        genre: movie.genre || 'General',
         image: movie.image || (movie.posterUrl ? null : `${id}.jpg`),
         rating: movie.rating != null ? String(movie.rating) : 'N/A',
       };
@@ -52,14 +44,8 @@ export default function useMovies(criteria = {}) {
   return {
     movies,
     rawResponse: data,
-    source: data?.source ?? (error ? 'fallback' : 'backend'),
-    isFallback: data?.source === 'fallback',
     error,
-    errorMessage:
-      error?.userMessage ||
-      error?.message ||
-      data?.fallbackError ||
-      null,
+    errorMessage: error?.userMessage || error?.message || null,
     isLoading,
     isRefreshing: isValidating && !isLoading,
     refreshMovies: mutate,

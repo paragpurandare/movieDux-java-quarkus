@@ -1,5 +1,5 @@
 export const swrConfig = {
-  revalidateOnFocus: true,
+  revalidateOnFocus: false,
   revalidateOnReconnect: true,
   shouldRetryOnError: false,
   dedupingInterval: 2000,

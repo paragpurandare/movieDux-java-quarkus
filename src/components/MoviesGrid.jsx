@@ -43,7 +43,7 @@
 
 
 // Ant design V1
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Input,
   Select,
@@ -57,29 +57,46 @@ import {
   Modal,
   Form,
   InputNumber,
+  Alert,
 } from 'antd';
-import { SearchOutlined, PlusOutlined } from '@ant-design/icons';
+import { SearchOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
 import MovieCard from './MovieCard';
+import useMovies from '../hooks/useMovies';
 
 const { Title } = Typography;
 
 const MoviesGrid = ({
-  movies = [],
   watchlist = [],
   toggleWatchlist,
-  loading = false,
   onCreateMovie,
   onUpdateMovie,
   onDeleteMovie,
   isMutating = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [genre, setGenre] = useState('All Genres');
-  const [rating, setRating] = useState('All');
+  const [actorsTerm, setActorsTerm] = useState('');
+  const [rating, setRating] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMovie, setEditingMovie] = useState(null);
   const [form] = Form.useForm();
+
+  // Backend query criteria: { title, actors, rating }
+  const criteria = useMemo(() => {
+    return {
+      ...(searchTerm.trim() ? { title: searchTerm.trim() } : {}),
+      ...(actorsTerm.trim() ? { actors: actorsTerm.trim() } : {}),
+      ...(rating !== '' && rating !== 'All' ? { rating: Number(rating) } : {}),
+    };
+  }, [searchTerm, actorsTerm, rating]);
+
+  // Call custom SWR hook with criteria directly from component
+  const {
+    movies = [],
+    isLoading: isMoviesLoading,
+    error: moviesError,
+    errorMessage,
+  } = useMovies(criteria);
 
   const handleOpenAdd = () => {
     setEditingMovie(null);
@@ -87,7 +104,6 @@ const MoviesGrid = ({
     form.setFieldsValue({
       title: '',
       actors: '',
-      genre: 'Action',
       rating: 8,
       posterUrl: '',
     });
@@ -99,7 +115,6 @@ const MoviesGrid = ({
     form.setFieldsValue({
       title: movie.title || '',
       actors: movie.actors || '',
-      genre: movie.genre || 'Action',
       rating: movie.rating != null && movie.rating !== 'N/A' ? Number(movie.rating) : 8,
       posterUrl: movie.posterUrl || '',
     });
@@ -131,34 +146,19 @@ const MoviesGrid = ({
     }
   };
 
-  const matchesGenre = (movie) =>
-    genre === 'All Genres' ||
-    (movie.genre || '').toLowerCase() === genre.toLowerCase();
-
-  const matchesSearchTerm = (movie) =>
-    (movie.title || '').toLowerCase().includes(searchTerm.toLowerCase());
-
-  const matchesRating = (movie) => {
-    switch (rating) {
-      case 'All':
-        return true;
-      case 'Good':
-        return Number(movie.rating) >= 8;
-      case 'Ok':
-        return Number(movie.rating) >= 5 && Number(movie.rating) < 8;
-      case 'Bad':
-        return Number(movie.rating) < 5;
-      default:
-        return true;
-    }
-  };
-
-  const filteredMovies = movies.filter(
-    (movie) =>
-      matchesGenre(movie) &&
-      matchesRating(movie) &&
-      matchesSearchTerm(movie)
-  );
+  const ratingOptions = [
+    { value: '', label: 'All Ratings' },
+    { value: '1', label: '1' },
+    { value: '2', label: '2' },
+    { value: '3', label: '3' },
+    { value: '4', label: '4' },
+    { value: '5', label: '5' },
+    { value: '6', label: '6' },
+    { value: '7', label: '7' },
+    { value: '8', label: '8' },
+    { value: '9', label: '9' },
+    { value: '10', label: '10' },
+  ];
 
   return (
     <div className="movies-container">
@@ -166,42 +166,36 @@ const MoviesGrid = ({
         Discover Movies
       </Title>
 
-      <Input
-        size="large"
-        className="movie-search"
-        placeholder="Search movies..."
-        prefix={<SearchOutlined />}
-        value={searchTerm}
-        onChange={(event) => setSearchTerm(event.target.value)}
-        allowClear
-      />
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} md={12}>
+          <Input
+            size="large"
+            placeholder="Search by movie title..."
+            prefix={<SearchOutlined />}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            allowClear
+          />
+        </Col>
+        <Col xs={24} md={12}>
+          <Input
+            size="large"
+            placeholder="Search by actors (e.g. Aamir, Yash)..."
+            prefix={<UserOutlined />}
+            value={actorsTerm}
+            onChange={(event) => setActorsTerm(event.target.value)}
+            allowClear
+          />
+        </Col>
+      </Row>
 
       <Space className="filter-bar" size="middle" wrap>
-        <Select
-          aria-label="Filter by genre"
-          value={genre}
-          onChange={setGenre}
-          style={{ width: 180 }}
-          options={[
-            { value: 'All Genres', label: 'All Genres' },
-            { value: 'Action', label: 'Action' },
-            { value: 'Drama', label: 'Drama' },
-            { value: 'Fantasy', label: 'Fantasy' },
-            { value: 'Horror', label: 'Horror' },
-          ]}
-        />
-
         <Select
           aria-label="Filter by rating"
           value={rating}
           onChange={setRating}
-          style={{ width: 160 }}
-          options={[
-            { value: 'All', label: 'All Ratings' },
-            { value: 'Good', label: 'Good (8+)' },
-            { value: 'Ok', label: 'Okay (5–7.9)' },
-            { value: 'Bad', label: 'Bad (<5)' },
-          ]}
+          style={{ width: 140 }}
+          options={ratingOptions}
         />
 
         {onCreateMovie && (
@@ -215,15 +209,25 @@ const MoviesGrid = ({
         )}
       </Space>
 
-      {loading && movies.length === 0 ? (
+      {moviesError && (
+        <Alert
+          type="error"
+          showIcon
+          message="Failed to load movies from backend"
+          description={errorMessage || 'Make sure Quarkus backend is running on http://localhost:8080.'}
+          style={{ marginBottom: 20 }}
+        />
+      )}
+
+      {isMoviesLoading && movies.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 0' }}>
           <Spin size="large" />
         </div>
-      ) : filteredMovies.length === 0 ? (
+      ) : movies.length === 0 ? (
         <Empty description="No movies found" />
       ) : (
         <Row gutter={[24, 24]} className="movies-grid">
-          {filteredMovies.map((movie) => (
+          {movies.map((movie) => (
             <Col
               key={movie.id}
               xs={24}
@@ -273,20 +277,6 @@ const MoviesGrid = ({
             <Input placeholder="e.g. Leonardo DiCaprio, Tom Hardy" />
           </Form.Item>
 
-          <Form.Item
-            name="genre"
-            label="Genre"
-            rules={[{ required: true, message: 'Please select a genre' }]}
-          >
-            <Select
-              options={[
-                { value: 'Action', label: 'Action' },
-                { value: 'Drama', label: 'Drama' },
-                { value: 'Fantasy', label: 'Fantasy' },
-                { value: 'Horror', label: 'Horror' },
-              ]}
-            />
-          </Form.Item>
 
           <Form.Item
             name="rating"

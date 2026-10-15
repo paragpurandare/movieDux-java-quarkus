@@ -144,16 +144,33 @@ body {
   font-weight: 700;
 }
 
-.movie-card-details {
+.movie-card-rating-row {
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
-.movie-card-genre {
-  color: #ddd;
-  font-size: 0.9rem;
+.movie-card-actors {
+  color: #bbb;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-bottom: 14px;
+  min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.movie-card-actors .actors-label {
+  color: #ffa100;
+  font-weight: 600;
+}
+
+.movie-card-actors .actors-names {
+  color: #e0e0e0;
 }
 
 .movie-card-action {

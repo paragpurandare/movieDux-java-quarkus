@@ -1,10 +1,5 @@
-import { Layout, Menu, Tag, Tooltip } from 'antd';
-import {
-  HomeOutlined,
-  UnorderedListOutlined,
-  CloudServerOutlined,
-  FileTextOutlined,
-} from '@ant-design/icons';
+import { Layout, Menu } from 'antd';
+import { HomeOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import {
   BrowserRouter as Router,
   Routes,
@@ -30,11 +25,8 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const {
-    movies,
-    isLoading: isMoviesLoading,
-    source: moviesSource,
-  } = useMovies();
+  // Full catalog for Watchlist route
+  const { movies } = useMovies();
 
   const {
     createMovie,
@@ -63,53 +55,17 @@ function AppContent() {
     },
   ];
 
-  const isBackend = moviesSource === 'backend';
-
   return (
     <Layout className="app-layout">
       <Header />
 
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          position: 'relative',
-        }}
-      >
-        <Menu
-          className="app-menu"
-          mode="horizontal"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{ flex: 1, justifyContent: 'center' }}
-        />
-
-        <div
-          style={{
-            position: 'absolute',
-            right: 24,
-            zIndex: 10,
-          }}
-        >
-          <Tooltip
-            title={
-              isBackend
-                ? 'Connected to Quarkus backend (Avati)'
-                : 'Quarkus backend offline — running on movies.json fallback'
-            }
-          >
-            <Tag
-              icon={isBackend ? <CloudServerOutlined /> : <FileTextOutlined />}
-              color={isBackend ? 'green' : 'orange'}
-              style={{ cursor: 'pointer' }}
-            >
-              {isBackend ? 'Quarkus Backend' : 'Local Fallback'}
-            </Tag>
-          </Tooltip>
-        </div>
-      </div>
+      <Menu
+        className="app-menu"
+        mode="horizontal"
+        selectedKeys={[location.pathname]}
+        items={menuItems}
+        onClick={({ key }) => navigate(key)}
+      />
 
       <Content className="app-content">
         <Routes>
@@ -117,10 +73,8 @@ function AppContent() {
             path="/"
             element={
               <MoviesGrid
-                movies={movies}
                 watchlist={watchlist}
                 toggleWatchlist={toggleWatchlist}
-                loading={isMoviesLoading}
                 onCreateMovie={createMovie}
                 onUpdateMovie={updateMovie}
                 onDeleteMovie={deleteMovie}

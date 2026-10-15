@@ -10,14 +10,13 @@ export default function useWatchlist() {
     isValidating,
     mutate,
   } = useSWR('watchlist', () => watchlistApi.query(), {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
   });
 
   const watchlistEntries = useMemo(() => {
     const rawEntries =
       data?.dataList ??
-      data?.data?.dataList ??
-      [];
+      (Array.isArray(data?.data) ? data.data : []);
 
     return rawEntries.map((item) => {
       if (typeof item === 'object' && item !== null) {
@@ -42,14 +41,8 @@ export default function useWatchlist() {
     watchlistIds,
     watchlistEntries,
     rawResponse: data,
-    source: data?.source ?? (error ? 'fallback' : 'backend'),
-    isFallback: data?.source === 'fallback',
     error,
-    errorMessage:
-      error?.userMessage ||
-      error?.message ||
-      data?.fallbackError ||
-      null,
+    errorMessage: error?.userMessage || error?.message || null,
     isLoading,
     isRefreshing: isValidating && !isLoading,
     refreshWatchlist: mutate,

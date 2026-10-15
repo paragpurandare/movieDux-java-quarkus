@@ -90,7 +90,6 @@ import {
   Card,
   Switch,
   Typography,
-  Space,
   Tag,
   Button,
   Tooltip,
@@ -98,7 +97,7 @@ import {
 } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const MovieCard = ({
   movie,
@@ -140,15 +139,16 @@ const MovieCard = ({
         {movie.title}
       </Title>
 
-      <Space className="movie-card-details" size="middle">
-        <Text className="movie-card-genre">
-          {movie.genre || (movie.actors ? movie.actors.split(',')[0] : 'General')}
-        </Text>
-
+      <div className="movie-card-rating-row">
         <Tag color={getRatingColor(Number(movie.rating))}>
-          {movie.rating ?? 'N/A'}
+          ★ {movie.rating ?? 'N/A'}/10
         </Tag>
-      </Space>
+      </div>
+
+      <div className="movie-card-actors" title={movie.actors || 'No actors listed'}>
+        <span className="actors-label">Cast: </span>
+        <span className="actors-names">{movie.actors || 'N/A'}</span>
+      </div>
 
       <div className="movie-card-action">
         <Switch
